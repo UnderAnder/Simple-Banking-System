@@ -26,6 +26,7 @@ class Account:
         else:
             print('Wrong card number or PIN!')
 
+
 class Card:
     card_database = {}
 
@@ -63,7 +64,7 @@ class Menu:
     def login_menu(self):
         card_number = input('Enter your card number:\n')
         card_pin = input('Enter your PIN:\n')
-        account = Account(card_number, card_pin)
+        Account(card_number, card_pin)
 
     def account_menu(self):
         print('1. Balance')
@@ -73,22 +74,16 @@ class Menu:
     def choice(self, n, state):
         if state == 'main_menu':
             if n == '1':
-                self.create_account()
+                Account(None, None)
             elif n == '2':
-                self.login_account()
+                self.login_menu()
             elif n == '0':
                 self.exit()
             else:
                 print('input 1, 2 or 0 for exit')
                 self.choice(input(), self.state)
         elif state == 'login_menu':
-            pass
-
-    def create_account(self):
-        account = Account(None, None)
-
-    def login_account(self):
-        pass
+            self.account_menu()
 
     def exit(self):
         print('Bye!')
@@ -96,7 +91,7 @@ class Menu:
 
 
 def main():
-    menu = Menu('main_menu')
+    Menu('main_menu')
 
 
 if __name__ == '__main__':
