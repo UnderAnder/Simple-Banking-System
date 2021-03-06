@@ -2,12 +2,16 @@ import random
 
 
 class Account:
-    def __init__(self, number, pin):
+    def __init__(self):
         self.balance = 0
+        self.card = None
+
+    def auth(self, number, pin):
         if number is None and pin is None:
-            self.card = self.new_account()
+            self.new_account()
         else:
-            self.card = Card().auth(number, pin)
+            if self.card is None:
+                self.card = Card().auth(number, pin)
 
     def new_account(self):
         card = Card().generate_card()
@@ -21,6 +25,9 @@ class Account:
     def show_balance(self):
         print('Balance:', self.balance)
 
+    def logout(self):
+        self.card = None
+
 
 class Card:
     card_database = {}
@@ -33,7 +40,7 @@ class Card:
         card_number_bin = '400000'
         card_number_checksum = '8'
         card_number_ain = random.randint(100000000, 999999999)
-        card_number = card_number_bin + str(card_number_ain) + card_number_checksum
+        card_number = int(card_number_bin + str(card_number_ain) + card_number_checksum)
 
         if card_number in self.card_database:
             self.generate_card()
@@ -44,23 +51,22 @@ class Card:
         return self
 
     def auth(self, number, pin):
-        if number in self.card_database:
-            if pin == self.card_database[number]:
-                print('You have successfully logged in!')
-                Menu('account_menu')
-                return self
-        else:
-            print('Wrong card number or PIN!')
+        if number in self.card_database and pin == self.card_database[number]:
+            print('You have successfully logged in!')
+            return self
+
+        print('Wrong card number or PIN!')
         return None
 
 
 class Menu:
-    def __init__(self, state):
-        self.state = state
-        self.account = None
-        if state == 'main_menu':
+    def __init__(self, account):
+        self.account = account
+
+    def show(self):
+        if self.account.card is None:
             self.main_menu()
-        if state == 'account_menu':
+        else:
             self.account_menu()
 
     def main_menu(self):
@@ -68,41 +74,44 @@ class Menu:
         print('2. Log into account')
         print('0. Exit')
 
-        self.choice(input(), 'main_menu')
+        self.choice(input())
 
     def login_menu(self):
-        card_number = input('Enter your card number:\n')
-        card_pin = input('Enter your PIN:\n')
-        Account(card_number, card_pin)
+        card_number = int(input('Enter your card number:\n'))
+        card_pin = int(input('Enter your PIN:\n'))
+        self.account.auth(card_number, card_pin)
 
     def account_menu(self):
         print('1. Balance')
         print('2. Log out')
         print('0. Exit')
 
-        self.choice(input(), 'account_menu')
+        self.choice(input())
 
-    def choice(self, n, state):
-        if state == 'main_menu':
+    def choice(self, n):
+        if self.account.card is None:
             if n == '1':
-                self.account = Account(None, None)
+                self.account.auth(None, None)
             elif n == '2':
                 self.login_menu()
             elif n == '0':
                 self.exit()
             else:
                 print('input 1, 2 or 0 for exit')
-                self.choice(input(), 'main_menu')
-        elif state == 'account_menu':
+                self.choice(input())
+        elif self.account.card is not None:
             if n == '1':
                 self.account.show_balance()
             elif n == '2':
-                self.login_menu()
+                self.account.logout()
             elif n == '0':
                 self.exit()
             else:
                 print('input 1, 2 or 0 for exit')
-                self.choice(input(), 'account_menu')
+                self.choice(input())
+        else:
+            print("Error")
+            exit()
 
     def exit(self):
         print('Bye!')
@@ -110,7 +119,9 @@ class Menu:
 
 
 def main():
-    Menu('main_menu')
+    account = Account()
+    while True:
+        Menu(account).show()
 
 
 if __name__ == '__main__':
