@@ -1,4 +1,4 @@
-iimport random
+import random
 
 
 class Account:
@@ -13,7 +13,8 @@ class Account:
             if self.card is None:
                 self.card = Card().auth(number, pin)
 
-    def new_account(self):
+    @staticmethod
+    def new_account():
         card = Card().generate_card()
         print('Your card has been created')
         print('Your card number:')
@@ -38,17 +39,31 @@ class Card:
 
     def generate_card(self):
         card_number_bin = '400000'
-        card_number_checksum = '8'
         card_number_ain = '{:09d}'.format(random.randrange(999999999))
+        card_number_checksum = self.luhn(card_number_bin + card_number_ain)
         card_number = int(card_number_bin + card_number_ain + card_number_checksum)
 
         if card_number in self.card_database:
             self.generate_card()
-        card_pin = int('{:04d}'.format(random.randrange(9999)))
+        card_pin = '{:04d}'.format(random.randrange(9999))
         self.card_database[card_number] = card_pin
         self.number = card_number
         self.pin = card_pin
         return self
+
+    @staticmethod
+    def luhn(card_number_without_checksum):
+        digit_sum = 0
+        for index, digit in enumerate(card_number_without_checksum):
+            digit = int(digit)
+            if index % 2 == 0:
+                digit *= 2
+                if digit > 9:
+                    digit -= 9
+            digit_sum += digit
+        if digit_sum % 10 == 0:
+            return str(0)
+        return str(10 - (digit_sum % 10))
 
     def auth(self, number, pin):
         if number in self.card_database and pin == self.card_database[number]:
@@ -78,7 +93,7 @@ class Menu:
 
     def login_menu(self):
         card_number = int(input('Enter your card number:\n'))
-        card_pin = int(input('Enter your PIN:\n'))
+        card_pin = input('Enter your PIN:\n')
         self.account.auth(card_number, card_pin)
 
     def account_menu(self):
@@ -113,7 +128,8 @@ class Menu:
             print("Error")
             exit()
 
-    def exit(self):
+    @staticmethod
+    def exit():
         print('Bye!')
         exit()
 
