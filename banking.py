@@ -1,4 +1,36 @@
 import random
+import sqlite3
+
+
+class DB:
+    def __init__(self):
+        self.conn = sqlite3.connect('card.s3db')
+        self.create_table()
+
+    def create_table(self):
+        cur = self.conn.cursor()
+        cur.execute('CREATE TABLE IF NOT EXISTS card('
+                    'id INTEGER PRIMARY KEY AUTOINCREMENT,'  # i know it's bad
+                    'number TEXT,'
+                    'pin TEXT,'
+                    'balance INTEGER DEFAULT 0)'
+                    ';')
+        self.conn.commit()
+
+    def add_new_card(self, card_number, pin):
+        cur = self.conn.cursor()
+        cur.execute('INSERT INTO card (number, pin)'
+                    f'VALUES({card_number},	{pin})'
+                    ';')
+        self.conn.commit()
+
+    def get_card(self, card_number):
+        cur = self.conn.cursor()
+        # WARNING very secure -_-, idc
+        cur.execute('SELECT number, pin, balance '
+                    'FROM card '
+                    f'WHERE number = {card_number};')
+        return cur.fetchone()
 
 
 class Account:
@@ -21,7 +53,6 @@ class Account:
         print(card.number)
         print('Your card PIN:')
         print(card.pin)
-        return card
 
     def show_balance(self):
         print('Balance:', self.balance)
@@ -31,11 +62,12 @@ class Account:
 
 
 class Card:
-    card_database = {}
+    card_database = DB()
 
     def __init__(self):
         self.number = None
         self.pin = None
+        self.bd = self.card_database
 
     def generate_card(self):
         card_number_bin = '400000'
@@ -43,12 +75,13 @@ class Card:
         card_number_checksum = self.luhn(card_number_bin + card_number_ain)
         card_number = int(card_number_bin + card_number_ain + card_number_checksum)
 
-        if card_number in self.card_database:
+        # check for uniq card number
+        if self.card_database.get_card(card_number) is not None:
             self.generate_card()
-        card_pin = '{:04d}'.format(random.randrange(9999))
-        self.card_database[card_number] = card_pin
+
         self.number = card_number
-        self.pin = card_pin
+        self.pin = '{:04d}'.format(random.randrange(9999))
+        self.card_database.add_new_card(self.number, self.pin)
         return self
 
     @staticmethod
@@ -65,8 +98,10 @@ class Card:
             return str(0)
         return str(10 - (digit_sum % 10))
 
-    def auth(self, number, pin):
-        if number in self.card_database and pin == self.card_database[number]:
+    def auth(self, card_number, pin):
+        card_in_db = self.card_database.get_card(card_number)
+        print(card_in_db)
+        if card_in_db is not None and str(card_number) in card_in_db and pin in card_in_db:
             print('You have successfully logged in!')
             return self
 
