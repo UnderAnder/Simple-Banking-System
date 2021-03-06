@@ -47,6 +47,17 @@ class DB:
         self.conn.commit()
         print('Income was added!')
 
+    def tansfer(self, card_number, deposit, targer):
+        cur = self.conn.cursor()
+        cur.execute('UPDATE card '
+                    f'SET balance = balance - {deposit} '
+                    f'WHERE number = {card_number};')
+
+        cur.execute('UPDATE card '
+                    f'SET balance = balance + {deposit} '
+                    f'WHERE number = {targer};')
+        self.conn.commit()
+
     def close_account(self, card_number):
         cur = self.conn.cursor()
         cur.execute('DELETE FROM card '
@@ -100,7 +111,7 @@ class Card:
             self.generate_card()
 
         self.number = card_number
-        self.pin = '{:04d}'.format(random.randrange(9999))
+        self.pin = str(random.randint(1000, 9999))  # '{:04d}'.format(random.randrange(9999))
         self.card_database.add_new_card(self.number, self.pin)
         return self
 
@@ -117,6 +128,22 @@ class Card:
         if digit_sum % 10 == 0:
             return str(0)
         return str(10 - (digit_sum % 10))
+
+    @staticmethod
+    def luhn_check(card_number):
+        card_number = str(card_number)
+        digit_sum = 0
+        for index, digit in enumerate(card_number):
+            digit = int(digit)
+            if index % 2 == 0:
+                digit *= 2
+                if digit > 9:
+                    digit -= 9
+            digit_sum += digit
+        if digit_sum % 10 == 0:
+            return True
+        else:
+            return False
 
     def auth(self, card_number, pin):
         card_in_db = self.card_database.get_card(card_number)
@@ -156,6 +183,7 @@ class Menu:
     def account_menu(self):
         print('1. Balance')
         print('2. Add income')
+        print('3. Do transfer')
         print('4. Close account')
         print('5. Log out')
         print('0. Exit')
@@ -179,6 +207,27 @@ class Menu:
             elif n == '2':
                 deposit = int(input('Enter income:\n'))
                 self.account.card.db.add_income(self.account.card.number, deposit)
+            elif n == '3': # TODO REFACTOR
+                target = int(input('Enter card number:\n'))
+                if self.account.card.number == target:
+                    print("You can't transfer money to the same account!")
+                    return False
+
+                if not Card().luhn_check(target):
+                    print('Probably you made a mistake in the card number. Please try again!')
+                    return False
+                if self.account.card.db.get_card(target) is None:
+                    print('Such a card does not exist.')
+                    return False
+
+                deposit = int(input('Enter income:\n'))
+                balance = self.account.card.db.get_balance(self.account.card.number)
+                if balance < deposit:
+                    print('Not enough money!')
+                    return False
+
+                self.account.card.db.tansfer(self.account.card.number, deposit, target)
+
             elif n == '4':
                 self.account.card.db.close_account(self.account.card.number)
                 self.account.logout()
