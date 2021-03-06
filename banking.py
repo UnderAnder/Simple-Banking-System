@@ -1,4 +1,4 @@
-import random
+iimport random
 
 
 class Account:
@@ -39,12 +39,12 @@ class Card:
     def generate_card(self):
         card_number_bin = '400000'
         card_number_checksum = '8'
-        card_number_ain = random.randint(100000000, 999999999)
-        card_number = int(card_number_bin + str(card_number_ain) + card_number_checksum)
+        card_number_ain = '{:09d}'.format(random.randrange(999999999))
+        card_number = int(card_number_bin + card_number_ain + card_number_checksum)
 
         if card_number in self.card_database:
             self.generate_card()
-        card_pin = random.randint(1000, 9999)
+        card_pin = int('{:04d}'.format(random.randrange(9999)))
         self.card_database[card_number] = card_pin
         self.number = card_number
         self.pin = card_pin
