@@ -32,18 +32,25 @@ class DB:
                     f'WHERE number = {card_number};')
         return cur.fetchone()
 
+    def get_balance(self, card_number):
+        cur = self.conn.cursor()
+        cur.execute('SELECT balance '
+                    'FROM card '
+                    f'WHERE number = {card_number};')
+        return int(cur.fetchone()[0])
+
+    def add_income(self, card_number, deposit):
+        cur = self.conn.cursor()
+        cur.execute('UPDATE card '
+                    f'SET balance = balance + {deposit} '
+                    f'WHERE number = {card_number};')
+        self.conn.commit()
+        print('Income was added!')
+
 
 class Account:
     def __init__(self):
-        self.balance = 0
         self.card = None
-
-    def auth(self, number, pin):
-        if number is None and pin is None:
-            self.new_account()
-        else:
-            if self.card is None:
-                self.card = Card().auth(number, pin)
 
     @staticmethod
     def new_account():
@@ -54,8 +61,14 @@ class Account:
         print('Your card PIN:')
         print(card.pin)
 
+    def auth(self, number, pin):
+        if number is None and pin is None:
+            self.new_account()
+        else:
+            self.card = Card().auth(number, pin)
+
     def show_balance(self):
-        print('Balance:', self.balance)
+        print('Balance:', self.card.db.get_balance(self.card.number))
 
     def logout(self):
         self.card = None
@@ -67,7 +80,7 @@ class Card:
     def __init__(self):
         self.number = None
         self.pin = None
-        self.bd = self.card_database
+        self.db = self.card_database
 
     def generate_card(self):
         card_number_bin = '400000'
@@ -103,6 +116,8 @@ class Card:
         print(card_in_db)
         if card_in_db is not None and str(card_number) in card_in_db and pin in card_in_db:
             print('You have successfully logged in!')
+            self.number = card_number
+            self.pin = pin
             return self
 
         print('Wrong card number or PIN!')
@@ -133,7 +148,8 @@ class Menu:
 
     def account_menu(self):
         print('1. Balance')
-        print('2. Log out')
+        print('2. Add income')
+        print('5. Log out')
         print('0. Exit')
 
         self.choice(input())
@@ -149,19 +165,19 @@ class Menu:
             else:
                 print('input 1, 2 or 0 for exit')
                 self.choice(input())
-        elif self.account.card is not None:
+        else:
             if n == '1':
                 self.account.show_balance()
             elif n == '2':
+                deposit = int(input('Enter income:\n'))
+                self.account.card.db.add_income(self.account.card.number, deposit)
+            elif n == '5':
                 self.account.logout()
             elif n == '0':
                 self.exit()
             else:
-                print('input 1, 2 or 0 for exit')
+                print('input 1, 2, 3, 4, 5 or 0 for exit')
                 self.choice(input())
-        else:
-            print("Error")
-            exit()
 
     @staticmethod
     def exit():
