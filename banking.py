@@ -47,6 +47,13 @@ class DB:
         self.conn.commit()
         print('Income was added!')
 
+    def close_account(self, card_number):
+        cur = self.conn.cursor()
+        cur.execute('DELETE FROM card '
+                    f'WHERE number = {card_number};')
+        self.conn.commit()
+        print('The account has been closed!')
+
 
 class Account:
     def __init__(self):
@@ -149,6 +156,7 @@ class Menu:
     def account_menu(self):
         print('1. Balance')
         print('2. Add income')
+        print('4. Close account')
         print('5. Log out')
         print('0. Exit')
 
@@ -171,6 +179,9 @@ class Menu:
             elif n == '2':
                 deposit = int(input('Enter income:\n'))
                 self.account.card.db.add_income(self.account.card.number, deposit)
+            elif n == '4':
+                self.account.card.db.close_account(self.account.card.number)
+                self.account.logout()
             elif n == '5':
                 self.account.logout()
             elif n == '0':
