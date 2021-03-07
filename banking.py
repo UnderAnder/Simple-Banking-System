@@ -18,6 +18,7 @@ class DB:
         self.conn.commit()
 
     def add_new_card(self, card_number, pin):
+        pin = f"'{pin}'"  # fix bug when lead zeroes don't save in db, check "Rigid Affinity"
         cur = self.conn.cursor()
         cur.execute('INSERT INTO card (number, pin)'
                     f'VALUES({card_number},	{pin})'
@@ -132,7 +133,7 @@ class Card:
             self.generate_card()
 
         self.number = card_number
-        self.pin = str(random.randint(1000, 9999))  # '{:04d}'.format(random.randrange(9999))
+        self.pin = '{:04d}'.format(random.randrange(9999))
         self.card_database.add_new_card(self.number, self.pin)
         return self
 
@@ -165,7 +166,6 @@ class Card:
 
     def auth(self, card_number, pin):
         card_in_db = self.card_database.get_card(card_number)
-        print(card_in_db)
         if card_in_db is not None and str(card_number) in card_in_db and pin in card_in_db:
             print('You have successfully logged in!')
             self.number = card_number
