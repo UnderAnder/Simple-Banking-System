@@ -47,7 +47,7 @@ class DB:
         self.conn.commit()
         print('Income was added!')
 
-    def tansfer(self, card_number, deposit, targer):
+    def transfer(self, card_number, deposit, target):
         cur = self.conn.cursor()
         cur.execute('UPDATE card '
                     f'SET balance = balance - {deposit} '
@@ -55,7 +55,7 @@ class DB:
 
         cur.execute('UPDATE card '
                     f'SET balance = balance + {deposit} '
-                    f'WHERE number = {targer};')
+                    f'WHERE number = {target};')
         self.conn.commit()
 
     def close_account(self, card_number):
@@ -85,11 +85,32 @@ class Account:
         else:
             self.card = Card().auth(number, pin)
 
+    def transfer_card_checks(self, target):
+        if self.card.number == target:
+            print("You can't transfer money to the same account!")
+            return False
+
+        if not Card().luhn_check(target):
+            print('Probably you made a mistake in the card number. Please try again!')
+            return False
+        if self.card.db.get_card(target) is None:
+            print('Such a card does not exist.')
+            return False
+        return True
+
+    def transfer_balance_check(self, deposit):
+        balance = self.card.db.get_balance(self.card.number)
+        if balance < deposit:
+            print('Not enough money!')
+            return False
+        return True
+
     def show_balance(self):
         print('Balance:', self.card.db.get_balance(self.card.number))
 
     def logout(self):
         self.card = None
+
 
 
 class Card:
@@ -103,10 +124,10 @@ class Card:
     def generate_card(self):
         card_number_bin = '400000'
         card_number_ain = '{:09d}'.format(random.randrange(999999999))
-        card_number_checksum = self.luhn(card_number_bin + card_number_ain)
+        card_number_checksum = self.luhn_gen_checksum(card_number_bin + card_number_ain)
         card_number = int(card_number_bin + card_number_ain + card_number_checksum)
 
-        # check for uniq card number
+        # check for unique card number
         if self.card_database.get_card(card_number) is not None:
             self.generate_card()
 
@@ -116,21 +137,7 @@ class Card:
         return self
 
     @staticmethod
-    def luhn(card_number_without_checksum):
-        digit_sum = 0
-        for index, digit in enumerate(card_number_without_checksum):
-            digit = int(digit)
-            if index % 2 == 0:
-                digit *= 2
-                if digit > 9:
-                    digit -= 9
-            digit_sum += digit
-        if digit_sum % 10 == 0:
-            return str(0)
-        return str(10 - (digit_sum % 10))
-
-    @staticmethod
-    def luhn_check(card_number):
+    def luhn(card_number):
         card_number = str(card_number)
         digit_sum = 0
         for index, digit in enumerate(card_number):
@@ -140,10 +147,21 @@ class Card:
                 if digit > 9:
                     digit -= 9
             digit_sum += digit
+        return digit_sum
+
+    @staticmethod
+    def luhn_gen_checksum(card_number_without_checksum):
+        digit_sum = Card().luhn(card_number_without_checksum)
+        if digit_sum % 10 == 0:
+            return str(0)
+        return str(10 - (digit_sum % 10))
+
+    @staticmethod
+    def luhn_check(card_number):
+        digit_sum = Card().luhn(card_number)
         if digit_sum % 10 == 0:
             return True
-        else:
-            return False
+        return False
 
     def auth(self, card_number, pin):
         card_in_db = self.card_database.get_card(card_number)
@@ -192,49 +210,45 @@ class Menu:
 
     def choice(self, n):
         if self.account.card is None:
-            if n == '1':
+            if n == '1':  # Create an account
                 self.account.auth(None, None)
-            elif n == '2':
+
+            elif n == '2':  # Log into account
                 self.login_menu()
-            elif n == '0':
+
+            elif n == '0':  # Exit
                 self.exit()
+
             else:
                 print('input 1, 2 or 0 for exit')
                 self.choice(input())
         else:
-            if n == '1':
+            if n == '1':  # Balance
                 self.account.show_balance()
-            elif n == '2':
+
+            elif n == '2':  # Add income
                 deposit = int(input('Enter income:\n'))
                 self.account.card.db.add_income(self.account.card.number, deposit)
-            elif n == '3': # TODO REFACTOR
-                target = int(input('Enter card number:\n'))
-                if self.account.card.number == target:
-                    print("You can't transfer money to the same account!")
-                    return False
 
-                if not Card().luhn_check(target):
-                    print('Probably you made a mistake in the card number. Please try again!')
+            elif n == '3':  # Do transfer
+                target_number = int(input('Enter card number:\n'))
+                if not self.account.transfer_card_checks(target_number):
                     return False
-                if self.account.card.db.get_card(target) is None:
-                    print('Such a card does not exist.')
+                deposit = int(input('Enter how much money you want to transfer:'))
+                if not self.account.transfer_balance_check(deposit):
                     return False
+                self.account.card.db.transfer(self.account.card.number, deposit, target_number)
 
-                deposit = int(input('Enter income:\n'))
-                balance = self.account.card.db.get_balance(self.account.card.number)
-                if balance < deposit:
-                    print('Not enough money!')
-                    return False
-
-                self.account.card.db.tansfer(self.account.card.number, deposit, target)
-
-            elif n == '4':
+            elif n == '4':  # Close account
                 self.account.card.db.close_account(self.account.card.number)
                 self.account.logout()
-            elif n == '5':
+
+            elif n == '5':  # Log out
                 self.account.logout()
-            elif n == '0':
+
+            elif n == '0':  # Exit
                 self.exit()
+
             else:
                 print('input 1, 2, 3, 4, 5 or 0 for exit')
                 self.choice(input())
