@@ -11,7 +11,7 @@ class DB:
         cur = self.conn.cursor()
         cur.execute('CREATE TABLE IF NOT EXISTS card('
                     'id INTEGER PRIMARY KEY,'
-                    'number TEXT,'
+                    'number TEXT UNIQUE,'
                     'pin TEXT,'
                     'balance INTEGER DEFAULT 0)'
                     ';')
@@ -255,6 +255,7 @@ class Menu:
 
     @staticmethod
     def exit():
+        DB().conn.close()
         print('Bye!')
         exit()
 
