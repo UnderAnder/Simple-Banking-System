@@ -10,7 +10,7 @@ class DB:
     def create_table(self):
         cur = self.conn.cursor()
         cur.execute('CREATE TABLE IF NOT EXISTS card('
-                    'id INTEGER PRIMARY KEY AUTOINCREMENT,'  # i know it's bad
+                    'id INTEGER PRIMARY KEY,'
                     'number TEXT,'
                     'pin TEXT,'
                     'balance INTEGER DEFAULT 0)'
