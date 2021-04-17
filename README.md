@@ -1,5 +1,5 @@
 # Simple-Banking-System
-training task from hyperskill.org
+training task from https://hyperskill.org/projects/109
 
 ### Examples:
 <pre><code class="language-no-highlight">1. Create an account
